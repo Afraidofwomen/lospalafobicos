@@ -1,13 +1,15 @@
-﻿import { useEffect, useRef } from 'react'
-import { createTimeline } from 'animejs'
-import { EagleMascot } from './EagleMascot'
+﻿import { useEffect, useRef, useState } from 'react'
+import { createTimeline, stagger } from 'animejs'
 
 interface Props {
   onStart: () => void
 }
 
+const TOPICS = ['Límites', 'Derivadas', 'Integrales', 'Series', 'Aplicaciones'] as const
+
 export function LandingPage({ onStart }: Props) {
   const rootRef = useRef<HTMLDivElement>(null)
+  const [topic, setTopic] = useState<(typeof TOPICS)[number]>('Límites')
 
   useEffect(() => {
     const root = rootRef.current
@@ -22,15 +24,15 @@ export function LandingPage({ onStart }: Props) {
       return
     }
 
-    const logo = root.querySelector('.mw-logo')
-    const copy = root.querySelector('.mw-hero-copy')
-    const cta = root.querySelector('.mw-cta')
-    if (!logo || !copy || !cta) return
-
     const tl = createTimeline({ defaults: { ease: 'out(3)' } })
-    tl.add(logo, { opacity: [0, 1], translateY: [14, 0], duration: 520 }, 0)
-      .add(copy, { opacity: [0, 1], translateY: [20, 0], duration: 700 }, 100)
-      .add(cta, { opacity: [0, 1], scale: [0.96, 1], duration: 560 }, 520)
+    tl.add('.mw-hero-bg', { opacity: [0, 1], scale: [1.08, 1], duration: 1600 }, 0)
+      .add('.mw-topbar', { opacity: [0, 1], translateY: [-12, 0], duration: 500 }, 100)
+      .add('.mw-nav', { opacity: [0, 1], translateY: [-10, 0], duration: 600 }, 200)
+      .add('.mw-word', { opacity: [0, 1], letterSpacing: ['0.3em', '0.02em'], duration: 1200 }, 350)
+      .add('.mw-bracket', { opacity: [0, 1], scale: [1.4, 1], duration: 700 }, 900)
+      .add('.mw-hero-left', { opacity: [0, 1], translateY: [24, 0], duration: 700 }, 950)
+      .add('.mw-hero-right', { opacity: [0, 1], translateY: [24, 0], duration: 700 }, 1050)
+      .add('.mw-tab', { opacity: [0, 1], translateY: [10, 0], duration: 500, delay: stagger(70) }, 1200)
 
     return () => {
       tl.revert()
@@ -38,75 +40,103 @@ export function LandingPage({ onStart }: Props) {
   }, [])
 
   return (
-    <div ref={rootRef} className="mw-landing min-h-full bg-mw-bg text-mw-white">
-      <div className="mx-auto flex min-h-full max-w-6xl items-center px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
-        <div className="relative w-full overflow-hidden rounded-[2rem] border border-mw-lavender/15 bg-mw-card shadow-[0_30px_80px_rgba(0,0,0,0.5)] sm:rounded-[2.5rem]">
-          <div
-            className="pointer-events-none absolute inset-0"
-            aria-hidden
-            style={{
-              background:
-                'radial-gradient(ellipse 55% 50% at 78% 45%, rgba(176,158,255,0.12), transparent 60%), radial-gradient(ellipse 40% 35% at 12% 18%, rgba(61,47,107,0.28), transparent 55%)',
-            }}
-          />
+    <div ref={rootRef} className="mw-landing flex min-h-full flex-col bg-mw-card text-mw-white">
+      <div
+        className="mw-topbar bg-mw-lavender-soft px-4 py-1.5 text-center text-xs font-semibold text-mw-card opacity-0 sm:text-sm"
+        data-mw-anim
+      >
+        Gratis: apunta tu cámara a cualquier ejercicio y resuélvelo paso a paso.
+      </div>
 
-          <header className="relative z-20 flex items-center px-6 pt-6 sm:px-10 sm:pt-8">
-            <a
-              href="#inicio"
-              className="mw-logo flex items-center gap-2.5 opacity-0"
+      <section id="inicio" className="relative isolate flex min-h-[calc(100svh-2rem)] flex-1 flex-col overflow-hidden">
+        <img
+          src="/hero-classroom.png"
+          alt=""
+          aria-hidden
+          className="mw-hero-bg absolute inset-0 -z-20 h-full w-full object-cover object-center opacity-0"
+          data-mw-anim
+        />
+        <div className="mw-hero-shade absolute inset-0 -z-10" aria-hidden />
+
+        <header className="mw-nav relative grid grid-cols-[1fr_auto_1fr] items-center px-6 py-5 opacity-0 sm:px-12" data-mw-anim>
+          <a href="#inicio" className="flex items-center gap-2.5 justify-self-start">
+            <LogoMark />
+            <span className="text-lg font-semibold tracking-tight">
+              vis<span className="text-mw-lavender">AR</span>
+            </span>
+          </a>
+          <nav className="hidden items-center gap-10 text-sm font-semibold tracking-wide uppercase sm:flex">
+            <a href="#temas" className="transition hover:text-mw-lavender">Temas</a>
+            <a href="#como" className="transition hover:text-mw-lavender">Cómo funciona</a>
+            <a href="#acerca" className="transition hover:text-mw-lavender">Acerca</a>
+          </nav>
+          <button
+            type="button"
+            onClick={onStart}
+            aria-label="Abrir cámara"
+            className="justify-self-end rounded-full p-2 transition hover:bg-white/10 hover:text-mw-lavender"
+          >
+            <CameraIcon />
+          </button>
+        </header>
+
+        <div className="relative flex flex-1 flex-col justify-end px-6 pb-8 sm:px-12 lg:px-24">
+          <div className="relative mx-auto mb-10 sm:mb-14">
+            <span className="mw-bracket mw-bracket--tr opacity-0" aria-hidden data-mw-anim />
+            <span className="mw-bracket mw-bracket--bl opacity-0" aria-hidden data-mw-anim />
+            <h1
+              className="mw-word px-4 text-center text-[clamp(3.5rem,13vw,10rem)] font-extrabold leading-none text-mw-lavender-soft uppercase opacity-0"
               data-mw-anim
             >
-              <LogoMark />
-              <span className="text-lg font-semibold tracking-tight sm:text-xl">
-                vis<span className="text-mw-lavender">AR</span>
-              </span>
-            </a>
-          </header>
+              Cálculo
+            </h1>
+          </div>
 
-          <section
-            id="inicio"
-            className="relative z-10 flex flex-col gap-8 px-6 pb-10 pt-10 sm:px-10 sm:pb-12 lg:pt-8"
-          >
-            <div className="grid items-center gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-6 xl:gap-4">
-              <div
-                className="mw-hero-copy mx-auto max-w-xl space-y-6 text-center opacity-0 lg:mx-0 lg:space-y-7 lg:text-left"
-                data-mw-anim
-              >
-                <h1 className="text-4xl font-bold leading-[1.12] tracking-tight text-mw-white sm:text-5xl lg:text-[3.35rem]">
-                  Domina las alturas del{' '}
-                  <span className="mw-genius-underline text-mw-white">genio</span>{' '}
-                  matemático.
-                </h1>
-
-                <div className="space-y-3 text-[0.95rem] leading-relaxed text-mw-muted sm:text-base">
-                  <p>
-                    Explora límites, derivadas e integrales con un tutor que guía
-                    con preguntas — nunca con la respuesta regalada.
-                  </p>
-                  <p>
-                    Apunta la cámara a tu ejercicio y razona paso a paso hasta la
-                    solución.
-                  </p>
-                </div>
-              </div>
-
-              <EagleMascot />
-            </div>
-
-            <div className="flex w-full justify-center">
+          <div className="grid gap-8 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] md:items-start md:gap-12">
+            <div className="mw-hero-left space-y-6 opacity-0" data-mw-anim>
+              <h2 className="text-2xl font-extrabold leading-tight uppercase sm:text-3xl">
+                Tu tutor de cálculo
+                <br />
+                en realidad aumentada
+              </h2>
               <button
                 type="button"
                 onClick={onStart}
-                className="mw-cta inline-flex items-center justify-center gap-3 rounded-2xl border-2 border-mw-lavender bg-mw-lavender/15 px-10 py-4 text-base font-bold tracking-wide text-mw-white opacity-0 shadow-[0_0_36px_rgba(176,158,255,0.28)] transition hover:bg-mw-lavender/25 hover:shadow-[0_0_48px_rgba(176,158,255,0.4)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mw-lavender sm:px-14 sm:py-5 sm:text-lg"
-                data-mw-anim
+                className="mw-cta inline-flex items-center gap-2.5 bg-mw-lavender-soft px-8 py-3.5 text-sm font-bold tracking-wide text-mw-card uppercase transition hover:bg-mw-lavender focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mw-lavender"
               >
                 <CameraIcon />
                 Abrir cámara
               </button>
             </div>
-          </section>
+
+            <p className="mw-hero-right max-w-xl text-sm leading-relaxed text-mw-white/85 opacity-0 sm:text-base" data-mw-anim>
+              Para estudiantes que se atoran en límites, derivadas e integrales. visAR
+              lee tu ejercicio con la cámara y te guía con preguntas, paso a paso,
+              hasta que llegas a la solución por tu cuenta — nunca te regala la
+              respuesta.
+            </p>
+          </div>
         </div>
-      </div>
+
+        <nav id="temas" aria-label="Temas" className="relative flex gap-6 overflow-x-auto px-6 pb-4 sm:gap-10 sm:px-12 lg:px-24">
+          {TOPICS.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTopic(t)}
+              aria-pressed={topic === t}
+              className={`mw-tab shrink-0 border-b-2 pb-1.5 text-xs font-semibold tracking-wide uppercase opacity-0 transition sm:text-sm ${
+                topic === t
+                  ? 'border-mw-lavender-soft text-mw-white'
+                  : 'border-transparent text-mw-white/70 hover:text-mw-white'
+              }`}
+              data-mw-anim
+            >
+              {t}
+            </button>
+          ))}
+        </nav>
+      </section>
     </div>
   )
 }
@@ -121,18 +151,14 @@ function LogoMark() {
         stroke="#b09eff"
         strokeWidth="1.6"
       />
-      <path
-        d="M16 8L23 12.2V19.8L16 24L9 19.8V12.2L16 8Z"
-        fill="#b09eff"
-        fillOpacity="0.5"
-      />
+      <path d="M16 8L23 12.2V19.8L16 24L9 19.8V12.2L16 8Z" fill="#b09eff" fillOpacity="0.5" />
     </svg>
   )
 }
 
 function CameraIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
       <path
         d="M4 8h3l1.5-2h7L17 8h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z"
         stroke="currentColor"
