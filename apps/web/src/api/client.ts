@@ -1,6 +1,7 @@
-import type { AnalyzeResult, TutorResponse, VerifyResult } from '../types'
+import type { AnalyzeResult, ProblemType, TutorResponse, VerifyResult } from '../types'
 
-const API_URL = import.meta.env.VITE_API_URL ?? ''
+const API_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '')
+const DEMO = import.meta.env.VITE_DEMO === 'true'
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
@@ -9,9 +10,17 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   })
   if (!res.ok) {
-    throw new Error(`Error ${res.status} en ${path}`)
+    const detail = (await res.json().catch(() => null)) as { error?: { message?: string } } | null
+    throw new Error(detail?.error?.message ?? `Error ${res.status} en ${path}`)
   }
   return res.json() as Promise<T>
+}
+
+/** El backend no conoce 'unknown' ni 'definite_integral'. */
+function backendType(type: ProblemType): string | undefined {
+  if (type === 'unknown') return undefined
+  if (type === 'definite_integral') return 'integral'
+  return type
 }
 
 /** Demo local cuando no hay backend (Fase 0–3 UI). */
@@ -72,7 +81,7 @@ export async function analyzeFrame(payload: {
   sessionId: string
   imageBase64: string
 }): Promise<AnalyzeResult> {
-  if (!API_URL) {
+  if (DEMO) {
     await delay(700)
     return mockAnalyze()
   }
@@ -84,7 +93,7 @@ export async function verifyStep(payload: {
   step: string
   relation: 'equivalent' | 'next_valid'
 }): Promise<VerifyResult> {
-  if (!API_URL) {
+  if (DEMO) {
     await delay(300)
     return {
       valid: true,
@@ -101,11 +110,20 @@ export async function askTutor(payload: {
   studentMessage: string
   analysis: AnalyzeResult | null
 }): Promise<TutorResponse> {
-  if (!API_URL) {
+  if (DEMO) {
     await delay(500)
     return mockTutor(payload.studentMessage, payload.hintLevel)
   }
-  return postJson<TutorResponse>('/api/tutor', payload)
+  const { analysis } = payload
+  if (!analysis) throw new Error('Primero apunta la cámara a un ejercicio y pulsa Revisar.')
+  // El nivel de pista lo lleva el servidor por sessionId; no se manda.
+  return postJson<TutorResponse>('/api/tutor', {
+    sessionId: payload.sessionId,
+    problem: { latex: analysis.problem.latex, type: backendType(analysis.problem.type) },
+    steps: analysis.steps,
+    legibility: analysis.legibility,
+    studentMessage: payload.studentMessage,
+  })
 }
 
 function delay(ms: number) {

@@ -5,6 +5,7 @@ import { analyzeFrame, askTutor } from '../api/client'
 import { useSessionStore } from '../state/sessionStore'
 import { ConfirmReading } from '../tutor/ConfirmReading'
 import { Latex } from '../tutor/Latex'
+import { MathText } from '../tutor/MathText'
 
 export function CameraStage() {
   const { videoRef, ready, start, captureFrame } = useCamera()
@@ -223,7 +224,7 @@ export function CameraStage() {
             <div className="history-sheet__list">
               {messages.map((m) => (
                 <p key={m.id} className={`history-sheet__msg history-sheet__msg--${m.role}`}>
-                  {m.text}
+                  <MathText text={m.text} />
                 </p>
               ))}
             </div>
@@ -234,7 +235,7 @@ export function CameraStage() {
           {phase === 'session' && lastTutor && (
             <div className={`caption-card${lastTutor.celebrate ? ' caption-card--ok' : ''}`}>
               <span className="caption-card__who">Tutor</span>
-              <p className="caption-card__q">{isTutoring ? 'Pensando…' : lastTutor.text}</p>
+              <p className="caption-card__q">{isTutoring ? 'Pensando…' : <MathText text={lastTutor.text} />}</p>
             </div>
           )}
 

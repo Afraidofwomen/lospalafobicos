@@ -4,6 +4,7 @@ import type { AnalyzeResult, OverlayAnnotation } from '../types'
 const COLORS: Record<string, string> = {
   amber: 'rgba(232, 168, 56, 0.45)',
   teal: 'rgba(45, 168, 152, 0.4)',
+  green: 'rgba(76, 190, 110, 0.4)',
   rose: 'rgba(224, 90, 110, 0.4)',
   ink: 'rgba(26, 35, 50, 0.35)',
 }
@@ -11,6 +12,7 @@ const COLORS: Record<string, string> = {
 const STROKE: Record<string, string> = {
   amber: '#e8a838',
   teal: '#2da898',
+  green: '#4cbe6e',
   rose: '#e05a6e',
   ink: '#1a2332',
 }

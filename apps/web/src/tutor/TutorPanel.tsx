@@ -2,6 +2,7 @@
 import { askTutor } from '../api/client'
 import { useSessionStore } from '../state/sessionStore'
 import { Latex } from './Latex'
+import { MathText } from './MathText'
 
 export function TutorPanel() {
   const {
@@ -78,7 +79,7 @@ export function TutorPanel() {
             key={m.id}
             className={`bubble bubble--${m.role}${m.celebrate ? ' bubble--celebrate' : ''}`}
           >
-            {m.text}
+            <MathText text={m.text} />
           </div>
         ))}
         {isTutoring && <div className="bubble bubble--tutor bubble--thinking">Pensando…</div>}

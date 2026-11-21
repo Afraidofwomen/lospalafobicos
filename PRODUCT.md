@@ -1,4 +1,4 @@
-﻿# Product
+# Product
 
 <!-- impeccable:product-schema 1 -->
 
@@ -32,8 +32,8 @@ Uso en el teléfono (PWA), a menudo en escritorio de estudio o aula; luz variabl
 - Análisis solo al pulsar "Revisar" (no por frame).
 - Sin revelar la respuesta final salvo escalamiento nivel 5.
 - Imágenes no se guardan en disco por defecto.
-- Backend aún incompleto; frontend puede correr en modo demo con mocks.
-- Open: clave LLM solo en servidor; tracking OpenCV.js en fase posterior.
+- El backend (`apps/api` + SymPy en `services/math`) decide si un paso vale; el frontend no calcula. Con `VITE_DEMO=true` corre con mocks.
+- Clave del modelo solo en el servidor. Tracking OpenCV.js en fase posterior.
 
 ## Brand Commitments
 
@@ -43,8 +43,9 @@ Uso en el teléfono (PWA), a menudo en escritorio de estudio o aula; luz variabl
 
 ## Evidence on Hand
 
-- Brief: `TUTOR_SOCRATICO_CALCULO_AR.md`
+- Brief: `docs/TUTOR_SOCRATICO_CALCULO_AR.md`
 - UI actual: `apps/web` (cámara, overlay, chat, onboarding)
+- Contratos de la API: `apps/api/src/schemas.ts`. Página de prueba del backend: `apps/api/public/index.html`.
 - No hay logo oficial, fotos de producto ni testimonios reales. Demos sintéticas deben etiquetarse como demo.
 
 ## Product Principles

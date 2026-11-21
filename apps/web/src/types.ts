@@ -6,12 +6,13 @@ export type ProblemType =
   | 'related_rates'
   | 'integral'
   | 'definite_integral'
+  | 'other'
   | 'unknown'
 
 export type Legibility = 'good' | 'low'
 
 export type OverlayType = 'highlight' | 'underline' | 'arrow' | 'note'
-export type OverlayColor = 'amber' | 'teal' | 'rose' | 'ink'
+export type OverlayColor = 'amber' | 'teal' | 'rose' | 'ink' | 'green'
 
 export type HintLevel = 0 | 1 | 2 | 3 | 4 | 5
 
