@@ -5,6 +5,7 @@ export interface AppConfig {
   llmBaseUrl: string;
   llmModel: string;
   llmVisionModel: string;
+  visionRateLimitPerMinute: number;
   corsOrigin: string;
   rateLimitPerMinute: number;
   maxImageBytes: number;
@@ -21,9 +22,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     port: integer(env.PORT, 8787),
     mathServiceUrl: (env.MATH_SERVICE_URL ?? "http://127.0.0.1:8000").replace(/\/$/, ""),
     llmApiKey: env.LLM_API_KEY ?? "",
-    llmBaseUrl: (env.LLM_BASE_URL ?? "https://api.openai.com/v1").replace(/\/$/, ""),
-    llmModel: env.LLM_MODEL ?? "gpt-4o-mini",
-    llmVisionModel: env.LLM_VISION_MODEL ?? env.LLM_MODEL ?? "gpt-4o-mini",
+    llmBaseUrl: (env.LLM_BASE_URL?.trim() || "https://ai-gateway.vercel.sh/v1").replace(/\/$/, ""),
+    llmModel: env.LLM_MODEL?.trim() || "google/gemini-3.5-flash-lite",
+    llmVisionModel: env.LLM_VISION_MODEL?.trim() || "google/gemini-3.5-flash-lite",
+    visionRateLimitPerMinute: Math.max(integer(env.RATE_LIMIT_PER_MINUTE, 30), 40),
     corsOrigin: env.CORS_ORIGIN ?? "*",
     rateLimitPerMinute: integer(env.RATE_LIMIT_PER_MINUTE, 30),
     maxImageBytes: integer(env.MAX_IMAGE_BYTES, 1_500_000),

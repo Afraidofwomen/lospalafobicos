@@ -1,0 +1,35 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "api": {
+      "root": "apps/api",
+      "framework": "hono",
+      "functions": {
+        "src/app.ts": {
+          "includeFiles": "public/**"
+        }
+      },
+      "bindings": [
+        {
+          "type": "service",
+          "service": "math",
+          "format": "url",
+          "env": "MATH_SERVICE_URL"
+        }
+      ]
+    },
+    "math": {
+      "root": "services/math",
+      "framework": "fastapi",
+      "entrypoint": "main:app",
+      "functions": {
+        "main.py": {
+          "maxDuration": 300
+        }
+      }
+    }
+  },
+  "rewrites": [
+    { "source": "/(.*)", "destination": { "service": "api" } }
+  ]
+}

@@ -23,7 +23,7 @@ npm install
 cp .env.example .env
 ```
 
-`LLM_API_KEY` solo hace falta para `/api/analyze` y para que el modelo proponga la redacción de la pregunta. Sin esa clave, `/api/verify` y `/api/tutor` siguen funcionando: la pregunta sale de las plantillas y el veredicto sale de SymPy.
+`/api/analyze` manda cada fotograma a un modelo de visión en Vercel AI Gateway (`google/gemini-3.5-flash-lite`). En Vercel usa el token OIDC del despliegue. En local hace falta `AI_GATEWAY_API_KEY` o `LLM_API_KEY`. SymPy sigue decidiendo si un paso vale. Si no hay modelo, la pregunta del tutor sale de las plantillas.
 
 ## Correr
 
@@ -42,7 +42,7 @@ npm run eval
 
 ## Contratos
 
-`POST /api/analyze` recibe `{ "sessionId", "imageBase64" }`. JPEG o PNG, lado mayor de 1280 px como máximo. La imagen se procesa en memoria y no se guarda. Si un paso tiene confianza menor a 0.7, `notes` pide confirmación y el tutor no lo usa para corregir.
+`POST /api/analyze` recibe `{ "sessionId", "imageBase64" }`. JPEG o PNG, lado mayor de 1280 px como máximo, con una sola fórmula en el recorte. El modelo de visión la pasa a LaTeX en memoria y no guarda la foto. La respuesta trae el problema, `steps` vacío y una nota para confirmar la lectura. Si no hay una fórmula clara, responde 422. Si el modelo no está configurado, responde 503.
 
 `POST /api/verify` recibe `{ "problem", "step", "relation", "type?" }`. `relation` es `equivalent` o `next_valid`. La respuesta es `{ "valid", "reason", "counterexample", "misconception" }`. No incluye la solución simbólica.
 

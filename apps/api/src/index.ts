@@ -1,7 +1,11 @@
 import { serve } from "@hono/node-server";
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createApp } from "./app.ts";
 import { loadConfig } from "./config.ts";
+
+loadEnv({ path: join(dirname(fileURLToPath(import.meta.url)), "../.env") });
 
 const config = loadConfig();
 const app = createApp({ config });

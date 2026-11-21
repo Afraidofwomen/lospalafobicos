@@ -20,11 +20,21 @@ Se evalúan derivada, integral y límite (`doit`) y se simplifica la diferencia.
 
 ## Sesiones e imágenes
 
-No hay disco para fotos ni para sesiones. La imagen se valida en memoria (JPEG o PNG, lado mayor ≤ 1280 px, tope de bytes) y se descarta. El texto leído se manda al modelo como dato, no como instrucción.
+No hay disco para fotos ni para sesiones. La imagen se valida en memoria (JPEG o PNG, lado mayor ≤ 1280 px, tope de bytes) y se descarta. El modelo de visión la ve en esa petición y no la guarda. El modelo de redacción no recibe la foto.
 
-## Proveedor del modelo
+## La fórmula la ve un modelo en la nube
 
-La API habla el formato de chat de OpenAI (`LLM_BASE_URL`, `LLM_MODEL`, `LLM_VISION_MODEL`). Así se puede apuntar a otro proveedor compatible sin cambiar código. La clave no se escribe en el cliente.
+`/api/analyze` manda el fotograma a Vercel AI Gateway, modelo `google/gemini-3.5-flash-lite`, con el prompt de transcripción. No resuelve el ejercicio: `steps` se vacía antes de responder. En Vercel la autorización es el token OIDC; `AI_GATEWAY_API_KEY` o `LLM_API_KEY` sirven fuera. La cámara de la página de prueba envía un fotograma cada dos segundos y solo abre la conversación cuando la misma fórmula se repite. SymPy sigue siendo quien acepta o rechaza un paso.
+
+RapidLatexOCR queda en el servicio de Python y ya no está en el camino de `/api/analyze`.
+
+## Proveedor del modelo de redacción
+
+La redacción opcional del tutor usa el mismo gateway (`LLM_BASE_URL`, `LLM_MODEL`). La clave no se escribe en el cliente. Sin modelo, la pregunta sale de las plantillas.
+
+## Despliegue
+
+La API de Hono y el motor de Python salen juntos con Vercel Services (beta). El motor no tiene ruta pública: la API lo llama por `MATH_SERVICE_URL`, que Vercel rellena en cada despliegue. Así el paso siguiente sigue sin salir al cliente. Python va en 3.12. En Vercel la verificación corre en el mismo proceso.
 
 ## Entorno de Python
 

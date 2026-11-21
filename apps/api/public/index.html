@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Palafóbicos</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css"
+    />
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
+    <style>
+      :root {
+        --ground: #e4eef3;
+        --sheet: #f4f8fa;
+        --ink: #1a2430;
+        --quiet: #3c5164;
+        --line: #c3d3de;
+        --teal: #0e5f60;
+        --teal-ink: #f3fbfb;
+        --good: #1c6b45;
+        --warn: #8a4e12;
+        --shadow: 0 14px 28px rgb(26 36 48 / 8%);
+        color-scheme: light;
+        font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+        font-size: 17px;
+        line-height: 1.45;
+        color: var(--ink);
+        background: var(--ground);
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; }
+      body {
+        background:
+          linear-gradient(180deg, rgb(255 255 255 / 45%), transparent 220px),
+          var(--ground);
+      }
+      ::selection { background: #b7dddd; color: var(--ink); }
+      :focus-visible {
+        outline: 2px solid var(--teal);
+        outline-offset: 3px;
+      }
+      button, input, textarea { font: inherit; color: inherit; }
+      button { cursor: pointer; }
+      button:disabled { cursor: progress; opacity: 0.55; }
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 4vw, 3.2rem);
+        font-weight: 650;
+        letter-spacing: -0.03em;
+        line-height: 0.95;
+      }
+      p { margin: 0; }
+      .frame {
+        width: min(1120px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 28px 0 48px;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 16px;
+        margin-bottom: 28px;
+      }
+      header p { color: var(--quiet); max-width: 36ch; }
+      .pulse {
+        font-variant-numeric: tabular-nums;
+        color: var(--quiet);
+        white-space: nowrap;
+      }
+      .pulse[data-on="1"] { color: var(--good); }
+      .stage {
+        display: grid;
+        grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
+        gap: 28px;
+        align-items: start;
+      }
+      .sheet, .talk {
+        background: var(--sheet);
+        border-radius: 18px;
+        box-shadow: var(--shadow);
+      }
+      .sheet { padding: 28px 28px 22px; }
+      .formula {
+        min-height: 4.5rem;
+        margin: 22px 0 8px;
+        overflow-x: auto;
+        font-size: 1.65rem;
+      }
+      .formula .katex { font-size: 1em; }
+      .finder {
+        position: relative;
+        margin-top: 8px;
+        border-radius: 16px;
+        overflow: hidden;
+        background: #1a2430;
+      }
+      .finder[hidden] { display: none; }
+      .finder video {
+        display: block;
+        width: 100%;
+        max-height: 420px;
+        object-fit: cover;
+        background: #1a2430;
+      }
+      .guide {
+        position: absolute;
+        inset: 14% 10%;
+        border: 1px solid rgb(243 251 251 / 85%);
+        border-radius: 12px;
+        pointer-events: none;
+      }
+      .finder-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 12px;
+        background: #1a2430;
+      }
+      .finder-bar .primary { background: var(--teal-ink); color: var(--ink); }
+      .finder-bar .ghost { color: var(--teal-ink); border-color: rgb(243 251 251 / 35%); }
+      .notes { color: var(--quiet); min-height: 1.4em; }
+      .notes[data-tone="low"] { color: var(--warn); }
+      label {
+        display: block;
+        margin: 22px 0 8px;
+        color: var(--quiet);
+      }
+      textarea, input[type="text"] {
+        width: 100%;
+        border: 1px solid var(--line);
+        background: white;
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      textarea { min-height: 92px; resize: vertical; }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 14px;
+        align-items: center;
+      }
+      .primary, .ghost {
+        border-radius: 999px;
+        padding: 10px 16px;
+        border: 1px solid transparent;
+      }
+      .primary { background: var(--ink); color: var(--sheet); }
+      .primary:hover { background: var(--teal); }
+      .ghost {
+        background: transparent;
+        border-color: var(--line);
+        color: var(--ink);
+      }
+      .ghost:hover { border-color: var(--teal); color: var(--teal); }
+      input[type="file"] { display: none; }
+      .talk {
+        min-height: 520px;
+        display: flex;
+        flex-direction: column;
+        padding: 22px 22px 16px;
+      }
+      .ticks {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        color: var(--quiet);
+      }
+      .ticks i {
+        width: 18px;
+        height: 8px;
+        border-radius: 99px;
+        background: var(--line);
+        display: block;
+      }
+      .ticks i[data-on="1"] { background: var(--teal); }
+      .thread {
+        flex: 1;
+        margin: 18px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        max-height: 420px;
+        overflow: auto;
+      }
+      .thread::-webkit-scrollbar { width: 10px; }
+      .thread::-webkit-scrollbar-thumb { background: var(--line); border-radius: 99px; }
+      .line { max-width: 62ch; }
+      .line strong { font-weight: 650; }
+      .line.tutor { color: var(--teal); }
+      .line.good { color: var(--good); }
+      .aside { color: var(--quiet); font-size: 0.92rem; }
+      .composer { display: flex; gap: 8px; }
+      .composer input { flex: 1; }
+      .status { min-height: 1.4em; margin-top: 10px; color: var(--warn); }
+      @media (max-width: 800px) {
+        .stage { grid-template-columns: 1fr; }
+        header { flex-direction: column; align-items: start; }
+        .talk { min-height: 0; }
+        .frame { width: min(100% - 20px, 1120px); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * { transition: none !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="frame">
+      <header>
+        <div>
+          <h1>Palafóbicos</h1>
+          <p>Una fórmula. El tutor pregunta. SymPy decide si el paso vale.</p>
+        </div>
+        <p class="pulse" id="pulse">Comprobando la API…</p>
+      </header>
+      <div class="stage">
+        <section class="sheet" aria-label="Fórmula">
+          <div class="formula" id="formula" aria-live="polite"></div>
+          <div class="finder" id="finder" hidden>
+            <video id="view" autoplay playsinline muted></video>
+            <div class="guide" aria-hidden="true"></div>
+            <div class="finder-bar">
+              <button class="primary" id="shutter" type="button">Pausar</button>
+              <button class="ghost" id="flip" type="button">Cambiar cámara</button>
+              <button class="ghost" id="close-cam" type="button">Cerrar</button>
+            </div>
+          </div>
+          <p class="notes" id="notes">Abre la cámara y deja una fórmula dentro del marco. El modelo la lee mientras la miras.</p>
+          <label for="latex">LaTeX de la fórmula</label>
+          <textarea id="latex" spellcheck="false">\frac{d}{dx}(x^{2}+1)^{5}</textarea>
+          <div class="row">
+            <button class="primary" id="open-cam" type="button">Usar la cámara</button>
+            <button class="ghost" id="begin" type="button">Empezar con esta fórmula</button>
+            <label class="ghost" for="photo">Elegir foto</label>
+            <input id="photo" type="file" accept="image/jpeg,image/png" />
+            <button class="ghost" id="reset" type="button">Otra fórmula</button>
+          </div>
+        </section>
+        <section class="talk" aria-label="Conversación">
+          <div class="ticks" id="ticks" aria-label="Nivel de pista">
+            <span>Pista</span>
+          </div>
+          <div class="thread" id="thread">
+            <p class="aside">Cuando confirmes la fórmula, la primera pregunta aparece aquí. Escribe un paso en LaTeX, o di «no sé» si quieres más ayuda.</p>
+          </div>
+          <form class="composer" id="composer">
+            <input id="message" type="text" autocomplete="off" placeholder="Un paso, o lo que no te cierra" disabled />
+            <button class="primary" id="send" type="submit" disabled>Enviar</button>
+          </form>
+          <p class="status" id="status" role="status"></p>
+        </section>
+      </div>
+    </div>
+    <script defer>
+      const DIAGNOSIS = {
+        confirmar_lectura: "hay que confirmar la lectura",
+        frustracion: "pidió ayuda",
+        avance: "el paso vale",
+        exploracion: "todavía no hay un paso",
+        sin_clasificar: "sin clasificar",
+        chain_rule_omitted: "falta la regla de la cadena",
+        quotient_sign: "el signo del cociente",
+        quotient_denominator: "el denominador del cociente",
+        product_rule_incomplete: "la regla del producto quedó a medias",
+        product_of_derivatives: "multiplicó las derivadas",
+        power_rule_exponent: "el exponente de la potencia",
+        power_rule_coefficient: "el coeficiente de la potencia",
+        missing_integration_constant: "falta la constante de integración",
+        operator_not_applied: "el operador no se aplicó",
+        sign_error: "un signo",
+        indeterminate_form: "forma indeterminada",
+      };
+
+      function diagnosisLabel(code) {
+        return DIAGNOSIS[code] || String(code).replaceAll("_", " ");
+      }
+
+      const TYPES = {
+        limit: "límite",
+        continuity: "continuidad",
+        derivative: "derivada",
+        integral: "integral",
+        optimization: "optimización",
+        related_rates: "razones de cambio",
+        other: "expresión",
+      };
+      const state = {
+        sessionId: crypto.randomUUID(),
+        problem: null,
+        legibility: "good",
+        steps: [],
+        hint: 0,
+      };
+
+      const latex = document.querySelector("#latex");
+      const formula = document.querySelector("#formula");
+      const notes = document.querySelector("#notes");
+      const thread = document.querySelector("#thread");
+      const status = document.querySelector("#status");
+      const message = document.querySelector("#message");
+      const send = document.querySelector("#send");
+      const begin = document.querySelector("#begin");
+      const ticks = document.querySelector("#ticks");
+
+      for (let i = 0; i < 5; i += 1) {
+        const mark = document.createElement("i");
+        mark.dataset.level = String(i + 1);
+        ticks.append(mark);
+      }
+
+      function paintFormula(source) {
+        const text = source.trim();
+        formula.replaceChildren();
+        if (!text || !window.katex) return;
+        window.katex.render(text, formula, { throwOnError: false, displayMode: true });
+      }
+
+      function setHint(level) {
+        state.hint = level;
+        for (const mark of ticks.querySelectorAll("i")) {
+          mark.dataset.on = Number(mark.dataset.level) <= level ? "1" : "0";
+        }
+      }
+
+      function say(className, text) {
+        const line = document.createElement("p");
+        line.className = "line " + className;
+        line.textContent = text;
+        thread.append(line);
+        thread.scrollTop = thread.scrollHeight;
+      }
+
+      function fail(error) {
+        status.textContent = error instanceof Error ? error.message : "Algo falló.";
+      }
+
+      async function post(path, body) {
+        const response = await fetch(path, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.error?.message || "La API no pudo responder.");
+        }
+        return data;
+      }
+
+      function lock(busy) {
+        begin.disabled = busy;
+        send.disabled = busy || !state.problem;
+        message.disabled = !state.problem;
+      }
+
+      function showTurn(turn) {
+        setHint(turn.hintLevel ?? 0);
+        const tone = turn.celebrate ? "good" : "tutor";
+        say(tone, turn.question || "…");
+        if (turn.diagnosis) say("aside", "Diagnóstico: " + diagnosisLabel(turn.diagnosis));
+        for (const item of turn.overlay ?? []) {
+          if (item.text) say("aside", item.text);
+        }
+      }
+
+      async function start(problem, legibility) {
+        status.textContent = "";
+        state.problem = problem;
+        state.legibility = legibility;
+        state.steps = [];
+        thread.replaceChildren();
+        lock(true);
+        try {
+          const turn = await post("/api/tutor", {
+            sessionId: state.sessionId,
+            problem,
+            steps: [],
+            legibility,
+            studentMessage: "sí",
+          });
+          showTurn(turn);
+          message.disabled = false;
+          send.disabled = false;
+          message.focus();
+          return true;
+        } catch (error) {
+          fail(error);
+          return false;
+        } finally {
+          begin.disabled = false;
+        }
+      }
+
+      latex.addEventListener("input", () => paintFormula(latex.value));
+      paintFormula(latex.value);
+      document.querySelector("script[src*='katex']")?.addEventListener("load", () => paintFormula(latex.value));
+
+      begin.addEventListener("click", () => {
+        const text = latex.value.trim();
+        if (!text) {
+          status.textContent = "Escribe la fórmula antes de empezar.";
+          return;
+        }
+        notes.textContent = "Fórmula escrita a mano. El tutor no vio una foto.";
+        notes.dataset.tone = "";
+        start({ latex: text }, "good");
+      });
+
+      document.querySelector("#photo").addEventListener("change", async (event) => {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+        if (file) await readCapture(file);
+      });
+
+      const finder = document.querySelector("#finder");
+      const view = document.querySelector("#view");
+      const shutter = document.querySelector("#shutter");
+      const WATCH_MS = 2000;
+      let stream = null;
+      let facing = "environment";
+      let watchTimer = 0;
+      let watching = false;
+      let paused = false;
+      let lastLatex = "";
+      let stable = 0;
+      let watchStarted = false;
+
+      document.querySelector("#open-cam").addEventListener("click", () => openCamera());
+      document.querySelector("#flip").addEventListener("click", () => {
+        facing = facing === "environment" ? "user" : "environment";
+        openCamera();
+      });
+      document.querySelector("#close-cam").addEventListener("click", stopCamera);
+      shutter.addEventListener("click", () => {
+        if (!stream) return;
+        paused = !paused;
+        shutter.textContent = paused ? "Seguir viendo" : "Pausar";
+        notes.textContent = paused
+          ? "Pausé la cámara. La fórmula se queda como está."
+          : "Viendo la fórmula…";
+      });
+      window.addEventListener("pagehide", stopCamera);
+
+      async function openCamera() {
+        if (!window.isSecureContext) {
+          status.textContent = "La cámara pide https. Ábrela desde el enlace publicado o desde localhost.";
+          return;
+        }
+        if (!navigator.mediaDevices?.getUserMedia) {
+          status.textContent = "Este navegador no abre la cámara. Elige una foto.";
+          return;
+        }
+        stopCamera();
+        status.textContent = "";
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+              facingMode: { ideal: facing },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+          });
+        } catch (error) {
+          const denied = error?.name === "NotAllowedError" || error?.name === "PermissionDeniedError";
+          if (facing === "environment" && !denied) {
+            facing = "user";
+            try {
+              stream = await navigator.mediaDevices.getUserMedia({
+                audio: false,
+                video: { facingMode: "user" },
+              });
+            } catch (again) {
+              cameraProblem(again);
+              return;
+            }
+          } else {
+            cameraProblem(error);
+            return;
+          }
+        }
+        view.srcObject = stream;
+        finder.hidden = false;
+        paused = false;
+        shutter.textContent = "Pausar";
+        notes.textContent = "Viendo la fórmula…";
+        await view.play().catch(() => {});
+        finder.scrollIntoView({ block: "nearest" });
+        watchTimer = window.setInterval(() => {
+          void watchTick();
+        }, WATCH_MS);
+        void watchTick();
+      }
+
+      function cameraProblem(error) {
+        const name = error?.name || "";
+        if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+          status.textContent = "No tengo permiso para la cámara. Actívalo en el navegador y vuelve a intentar.";
+          return;
+        }
+        if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+          status.textContent = "No encontré una cámara. Puedes elegir una foto.";
+          return;
+        }
+        status.textContent = "No pude abrir la cámara.";
+      }
+
+      function stopCamera() {
+        window.clearInterval(watchTimer);
+        watchTimer = 0;
+        watching = false;
+        paused = false;
+        for (const track of stream?.getTracks() ?? []) track.stop();
+        stream = null;
+        if (view) view.srcObject = null;
+        if (finder) finder.hidden = true;
+      }
+
+      async function watchTick() {
+        if (!stream || paused || watching || document.hidden || !view.videoWidth) return;
+        watching = true;
+        try {
+          const blob = await frameBlob();
+          if (!blob) return;
+          const reading = await post("/api/analyze", {
+            sessionId: state.sessionId,
+            imageBase64: await blobToBase64(blob),
+          });
+          await applyLive(reading);
+        } catch (error) {
+          const message = error?.message || "";
+          if (/leer una fórmula|fórmula clara/i.test(message)) {
+            notes.textContent = "Todavía no veo una fórmula clara.";
+          } else if (/Demasiadas peticiones/i.test(message)) {
+            notes.textContent = "Espero un momento para no saturar el modelo.";
+          } else {
+            status.textContent = message;
+          }
+        } finally {
+          watching = false;
+        }
+      }
+
+      async function applyLive(reading) {
+        const next = (reading.problem?.latex || "").trim();
+        if (!next) {
+          notes.textContent = "Todavía no veo una fórmula clara.";
+          return;
+        }
+        if (next === lastLatex) stable += 1;
+        else {
+          lastLatex = next;
+          stable = 1;
+        }
+        latex.value = next;
+        paintFormula(next);
+        const kind = TYPES[reading.problem.type] || "expresión";
+        notes.textContent = "Veo " + kind + ". " + (reading.notes || "");
+        notes.dataset.tone = reading.legibility === "low" ? "low" : "";
+        if (stable < 2) return;
+        const problem = { latex: next, type: reading.problem.type };
+        if (state.problem) {
+          state.problem = problem;
+          return;
+        }
+        if (reading.legibility === "low" || watchStarted) return;
+        watchStarted = true;
+        const ok = await start(problem, reading.legibility);
+        if (!ok) watchStarted = false;
+      }
+
+      async function frameBlob() {
+        const longest = Math.max(view.videoWidth, view.videoHeight);
+        const scale = Math.min(1, 960 / longest);
+        const shot = document.createElement("canvas");
+        shot.width = Math.max(1, Math.round(view.videoWidth * scale));
+        shot.height = Math.max(1, Math.round(view.videoHeight * scale));
+        const context = shot.getContext("2d");
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, shot.width, shot.height);
+        context.drawImage(view, 0, 0, shot.width, shot.height);
+        return new Promise((resolve) => shot.toBlob(resolve, "image/jpeg", 0.72));
+      }
+
+      async function readCapture(file) {
+        status.textContent = "Leyendo la fórmula…";
+        shutter.disabled = true;
+        lock(true);
+        try {
+          const imageBase64 = await shrink(file);
+          const reading = await post("/api/analyze", {
+            sessionId: state.sessionId,
+            imageBase64,
+          });
+          const next = reading.problem.latex.trim();
+          latex.value = next;
+          lastLatex = next;
+          stable = 2;
+          paintFormula(next);
+          const kind = TYPES[reading.problem.type] || "expresión";
+          notes.textContent = (reading.notes ? reading.notes + " " : "") + "La leí como " + kind + ".";
+          notes.dataset.tone = reading.legibility === "low" ? "low" : "";
+          watchStarted = true;
+          const ok = await start(
+            { latex: next, type: reading.problem.type },
+            reading.legibility,
+          );
+          if (!ok) watchStarted = false;
+        } catch (error) {
+          fail(error);
+          begin.disabled = false;
+        } finally {
+          shutter.disabled = false;
+        }
+      }
+
+      document.querySelector("#composer").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        if (!state.problem) return;
+        const text = message.value.trim();
+        if (!text) return;
+        message.value = "";
+        say("student", text);
+        status.textContent = "";
+        lock(true);
+        try {
+          const turn = await post("/api/tutor", {
+            sessionId: state.sessionId,
+            problem: state.problem,
+            steps: state.steps,
+            legibility: state.legibility,
+            studentMessage: text,
+            relation: "next_valid",
+          });
+          showTurn(turn);
+          if (turn.celebrate) {
+            state.steps.push({ id: "s" + (state.steps.length + 1), latex: text });
+          }
+        } catch (error) {
+          fail(error);
+        } finally {
+          lock(false);
+        }
+      });
+
+      document.querySelector("#reset").addEventListener("click", async () => {
+        await fetch("/api/session/" + state.sessionId, { method: "DELETE" }).catch(() => {});
+        state.sessionId = crypto.randomUUID();
+        state.problem = null;
+        state.steps = [];
+        lastLatex = "";
+        stable = 0;
+        watchStarted = false;
+        setHint(0);
+        thread.replaceChildren();
+        const hint = document.createElement("p");
+        hint.className = "aside";
+        hint.textContent = "Fórmula nueva. Confírmala para recibir la primera pregunta.";
+        thread.append(hint);
+        message.value = "";
+        lock(false);
+        status.textContent = "";
+      });
+
+      async function shrink(file) {
+        const bitmap = await createImageBitmap(file);
+        const scale = Math.min(1, 1280 / Math.max(bitmap.width, bitmap.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+        canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+        const context = canvas.getContext("2d");
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        bitmap.close?.();
+        let quality = 0.86;
+        let blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+        while (blob && blob.size > 1_400_000 && quality > 0.45) {
+          quality -= 0.1;
+          blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+        }
+        if (!blob) throw new Error("No pude preparar la imagen.");
+        return blobToBase64(blob);
+      }
+
+      async function blobToBase64(blob) {
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        let binary = "";
+        for (let index = 0; index < bytes.length; index += 0x8000) {
+          binary += String.fromCharCode(...bytes.subarray(index, index + 0x8000));
+        }
+        return btoa(binary);
+      }
+
+      fetch("/api/health")
+        .then((response) => response.json())
+        .then((body) => {
+          const pulse = document.querySelector("#pulse");
+          pulse.textContent = body.math ? "API y SymPy en línea" : "La API responde, SymPy no";
+          pulse.dataset.on = body.ok && body.math ? "1" : "0";
+        })
+        .catch(() => {
+          document.querySelector("#pulse").textContent = "No llego a la API";
+        });
+
+      window.addEventListener("load", () => paintFormula(latex.value));
+    </script>
+  </body>
+</html>

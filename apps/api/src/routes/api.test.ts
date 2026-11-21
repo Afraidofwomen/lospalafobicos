@@ -15,6 +15,7 @@ const config: AppConfig = {
   llmBaseUrl: "http://127.0.0.1:9",
   llmModel: "test",
   llmVisionModel: "test",
+  visionRateLimitPerMinute: 40,
   corsOrigin: "*",
   rateLimitPerMinute: 30,
   maxImageBytes: 1_500_000,
@@ -52,6 +53,9 @@ function clients(mathBody: MathResult = mathResult()) {
       calls.push(input);
       return mathBody;
     },
+    readFormula: async () => {
+      throw new Error("esta prueba no lee fórmulas");
+    },
   };
   const llm: LlmClient = {
     enabled: () => false,
@@ -61,6 +65,14 @@ function clients(mathBody: MathResult = mathResult()) {
   };
   return { math, llm, calls };
 }
+
+test("la raíz sirve la página de prueba", async () => {
+  const { math, llm } = clients();
+  const app = createApp({ config, math, llm });
+  const response = await app.request("/");
+  assert.equal(response.status, 200);
+  assert.match(await response.text(), /Palafóbicos/);
+});
 
 beforeEach(() => {
   resetSessions();
@@ -125,34 +137,23 @@ test("confianza baja pide confirmación y no llama al verificador", async () => 
   assert.equal(calls.length, 0);
 });
 
-test("analyze sin clave responde 503 y no guarda la imagen", async () => {
-  const { math, llm } = clients();
-  const app = createApp({ config, math, llm });
-  const response = await app.request("/api/analyze", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ sessionId: "cam", imageBase64: jpeg() }),
-  });
-  assert.equal(response.status, 503);
-  const body = await response.json();
-  assert.equal(body.error.code, "llm_not_configured");
-});
-
-test("analyze transcribe y marca la confianza baja", async () => {
+test("analyze manda el fotograma al modelo de visión", async () => {
   const { math } = clients();
+  let sawImage = "";
+  let sawModel = "";
   const llm: LlmClient = {
     enabled: () => true,
     completeJson: async (message) => {
-      assert.equal(message.imageBase64?.includes("data:"), false);
-      assert.match(message.system, /DATO/);
+      sawImage = message.imageBase64 ?? "";
+      sawModel = message.model;
       return {
-        problem: { latex: "x^{2}", type: "derivative", bbox: [0, 0, 1, 0.2] },
-        steps: [{ id: "s1", latex: "2x", bbox: [0, 0.3, 1, 0.2], confidence: 0.4 }],
+        problem: { latex: String.raw`\frac{d}{dx}x^{2}`, type: "derivative" },
+        steps: [{ id: "s1", latex: "2x", bbox: [0, 0, 1, 1], confidence: 0.9 }],
         legibility: "good",
       };
     },
   };
-  const app = createApp({ config: { ...config, llmApiKey: "test-key" }, math, llm });
+  const app = createApp({ config, math, llm });
   const response = await app.request("/api/analyze", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -160,8 +161,29 @@ test("analyze transcribe y marca la confianza baja", async () => {
   });
   assert.equal(response.status, 200);
   const body = await response.json();
-  assert.match(body.notes, /s1/);
-  assert.equal(body.steps[0].confidence, 0.4);
+  assert.equal(body.problem.type, "derivative");
+  assert.equal(body.steps.length, 0);
+  assert.match(body.notes, /Confírmala/);
+  assert.equal(sawImage.length > 20, true);
+  assert.equal(sawModel, "test");
+  assert.equal(JSON.stringify(body).includes("2x"), false);
+});
+
+test("analyze avisa cuando la fórmula no se lee", async () => {
+  const { math } = clients();
+  const llm: LlmClient = {
+    enabled: () => true,
+    completeJson: async () => ({ problem: { latex: "  " }, legibility: "low" }),
+  };
+  const app = createApp({ config, math, llm });
+  const response = await app.request("/api/analyze", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ sessionId: "cam", imageBase64: jpeg() }),
+  });
+  assert.equal(response.status, 422);
+  const body = await response.json();
+  assert.equal(body.error.code, "unreadable");
 });
 
 test("rechaza una imagen demasiado grande en píxeles", async () => {

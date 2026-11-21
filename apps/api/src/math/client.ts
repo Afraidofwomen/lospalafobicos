@@ -7,6 +7,29 @@ export class MathUnavailableError extends Error {
   }
 }
 
+export class UnreadableImageError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "UnreadableImageError";
+  }
+}
+
+export interface FormulaReading {
+  problem: {
+    latex: string;
+    type: "limit" | "continuity" | "derivative" | "integral" | "optimization" | "related_rates" | "other";
+    bbox: [number, number, number, number];
+  };
+  steps: Array<{
+    id: string;
+    latex: string;
+    bbox: [number, number, number, number];
+    confidence: number;
+  }>;
+  legibility: "good" | "low";
+  notes?: string;
+}
+
 export interface VerifyInput {
   problem: string;
   step: string;
@@ -17,6 +40,7 @@ export interface VerifyInput {
 export interface MathClient {
   health(): Promise<boolean>;
   verify(input: VerifyInput): Promise<MathResult>;
+  readFormula(imageBase64: string): Promise<FormulaReading>;
 }
 
 export function createMathClient(baseUrl: string): MathClient {
@@ -28,6 +52,25 @@ export function createMathClient(baseUrl: string): MathClient {
       } catch {
         return false;
       }
+    },
+    async readFormula(imageBase64) {
+      let response: Response;
+      try {
+        response = await fetch(`${baseUrl}/ocr`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ imageBase64 }),
+          signal: AbortSignal.timeout(20_000),
+        });
+      } catch {
+        throw new MathUnavailableError();
+      }
+      if (response.status === 422) {
+        const body = (await response.json()) as { error?: { message?: string } };
+        throw new UnreadableImageError(body.error?.message ?? "No pude leer la fórmula.");
+      }
+      if (!response.ok) throw new MathUnavailableError();
+      return (await response.json()) as FormulaReading;
     },
     async verify(input) {
       let response: Response;

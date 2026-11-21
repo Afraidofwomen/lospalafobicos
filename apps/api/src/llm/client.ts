@@ -1,14 +1,23 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { getVercelOidcToken } from "@vercel/oidc";
 import type { AppConfig } from "../config.ts";
 
 const here = dirname(fileURLToPath(import.meta.url));
+const GATEWAY = "https://ai-gateway.vercel.sh/v1";
 
 export class LlmNotConfiguredError extends Error {
-  constructor() {
-    super("llm not configured");
+  constructor(message = "llm not configured") {
+    super(message);
     this.name = "LlmNotConfiguredError";
+  }
+}
+
+export class VisionUnavailableError extends Error {
+  constructor() {
+    super("vision unavailable");
+    this.name = "VisionUnavailableError";
   }
 }
 
@@ -17,6 +26,7 @@ export interface LlmMessage {
   user: string;
   imageBase64?: string;
   model: string;
+  oidcToken?: string;
 }
 
 export interface LlmClient {
@@ -34,9 +44,13 @@ export function visionSystemPrompt(): string {
 
 export function createLlmClient(config: AppConfig): LlmClient {
   return {
-    enabled: () => config.llmApiKey.length > 0,
+    enabled: () =>
+      config.llmApiKey.length > 0 ||
+      Boolean(process.env.AI_GATEWAY_API_KEY?.trim()) ||
+      Boolean(process.env.VERCEL) ||
+      Boolean(process.env.VERCEL_OIDC_TOKEN),
     async completeJson(message) {
-      if (!config.llmApiKey) throw new LlmNotConfiguredError();
+      const token = await bearer(config, message.oidcToken);
       const content = message.imageBase64
         ? [
             { type: "text", text: message.user },
@@ -46,7 +60,7 @@ export function createLlmClient(config: AppConfig): LlmClient {
       const response = await fetch(`${config.llmBaseUrl}/chat/completions`, {
         method: "POST",
         headers: {
-          authorization: `Bearer ${config.llmApiKey}`,
+          authorization: `Bearer ${token}`,
           "content-type": "application/json",
         },
         body: JSON.stringify({
@@ -60,7 +74,11 @@ export function createLlmClient(config: AppConfig): LlmClient {
         }),
         signal: AbortSignal.timeout(30_000),
       });
+      if (response.status === 401 || response.status === 403) {
+        throw new LlmNotConfiguredError("rejected");
+      }
       if (!response.ok) {
+        if (message.imageBase64) throw new VisionUnavailableError();
         throw new Error(`llm status ${response.status}`);
       }
       const body = (await response.json()) as {
@@ -72,7 +90,24 @@ export function createLlmClient(config: AppConfig): LlmClient {
   };
 }
 
-export function parseModelJson(text: string): unknown {
+async function bearer(config: AppConfig, requestToken?: string): Promise<string> {
+  const gatewayKey = process.env.AI_GATEWAY_API_KEY?.trim();
+  if (gatewayKey) return gatewayKey;
+  if (config.llmApiKey && !config.llmBaseUrl.startsWith(GATEWAY)) return config.llmApiKey;
+  if (requestToken) return requestToken;
+  if (process.env.VERCEL || process.env.VERCEL_OIDC_TOKEN || config.llmBaseUrl.startsWith(GATEWAY)) {
+    try {
+      const token = await getVercelOidcToken();
+      if (token) return token;
+    } catch {
+      // Sin token de Vercel se usa la clave explícita, si existe.
+    }
+  }
+  if (config.llmApiKey) return config.llmApiKey;
+  throw new LlmNotConfiguredError();
+}
+
+function parseModelJson(text: string): unknown {
   const trimmed = text.trim();
   try {
     return JSON.parse(trimmed);
