@@ -62,6 +62,41 @@
   background: transparent;
 }
 
+/* Hero fotográfico: foto desaturada + degradado para leer el texto */
+.mw-hero-bg {
+  filter: grayscale(0.55) contrast(0.95) brightness(0.8);
+}
+
+.mw-hero-shade {
+  background:
+    linear-gradient(to bottom, rgba(12, 12, 20, 0.55) 0%, rgba(12, 12, 20, 0.15) 30%, rgba(12, 12, 20, 0.35) 55%, rgba(12, 12, 20, 0.92) 100%),
+    linear-gradient(to right, rgba(61, 47, 107, 0.35), transparent 60%);
+}
+
+.mw-word {
+  text-shadow: 0 6px 40px rgba(12, 12, 20, 0.45);
+}
+
+.mw-bracket {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: var(--color-mw-lavender-soft);
+  border-style: solid;
+}
+
+.mw-bracket--tr {
+  top: -6px;
+  right: 0;
+  border-width: 2px 2px 0 0;
+}
+
+.mw-bracket--bl {
+  bottom: -6px;
+  left: 0;
+  border-width: 0 0 2px 2px;
+}
+
 .mw-genius-underline {
   position: relative;
   display: inline-block;
