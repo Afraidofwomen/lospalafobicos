@@ -53,6 +53,15 @@ export const analyzeResponseSchema = z.object({
   ),
   legibility: z.enum(["good", "low"]),
   notes: z.string().optional(),
+  checks: z.array(
+    z.object({
+      stepId: z.string(),
+      verdict: z.enum(["ok", "wrong", "unknown"]),
+      reason: z.string(),
+      counterexample: z.string().nullable(),
+      misconception: z.string().nullable(),
+    }),
+  ),
 });
 
 export function errorBody(code: string, message: string) {

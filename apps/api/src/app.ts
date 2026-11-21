@@ -32,7 +32,7 @@ export function createApp(deps: AppDeps) {
   app.get("/", (c) => c.html(demoPage()));
   app.get("/health", (c) => c.json({ ok: true }));
   app.get("/api/health", async (c) => c.json({ ok: true, math: await math.health() }));
-  app.post("/api/analyze", visionLimit, (c) => analyze(c, deps.config, llm));
+  app.post("/api/analyze", visionLimit, (c) => analyze(c, deps.config, llm, math));
   app.post("/api/verify", limit, (c) => verify(c, math));
   app.post("/api/tutor", limit, (c) => tutor(c, deps.config, math, llm));
   app.delete("/api/session/:id", (c) => {

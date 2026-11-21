@@ -11,6 +11,7 @@ export function CameraStage() {
   const { videoRef, ready, start, captureFrame } = useCamera()
   const stageRef = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ w: 0, h: 0 })
+  const [frameSize, setFrameSize] = useState<{ w: number; h: number } | null>(null)
   const [draft, setDraft] = useState('')
   const [historyOpen, setHistoryOpen] = useState(false)
 
@@ -125,6 +126,9 @@ export function CameraStage() {
           src={frozenFrame}
           alt="Fotograma capturado del ejercicio"
           className="camera-stage__freeze"
+          onLoad={(e) =>
+            setFrameSize({ w: e.currentTarget.naturalWidth, h: e.currentTarget.naturalHeight })
+          }
         />
       )}
 
@@ -133,6 +137,7 @@ export function CameraStage() {
         overlays={overlays}
         width={size.w}
         height={size.h}
+        frame={frozenFrame ? frameSize : null}
       />
 
       <div className="camera-stage__chrome">

@@ -30,7 +30,7 @@ No hay disco para fotos ni para sesiones. La imagen se valida en memoria (JPEG o
 
 ## La fórmula la ve un modelo en la nube
 
-`/api/analyze` manda el fotograma a un modelo de visión (`gemini-3.5-flash-lite`) con el prompt de transcripción. No resuelve el ejercicio: `steps` se vacía antes de responder. El proveedor sale de `LLM_BASE_URL`: con Vercel AI Gateway la autorización es el token OIDC o `AI_GATEWAY_API_KEY`; con otro endpoint compatible con OpenAI, como el de Google, se usa `LLM_API_KEY`. SymPy sigue siendo quien acepta o rechaza un paso.
+`/api/analyze` manda el fotograma a un modelo de visión (`gemini-3.5-flash-lite`) con el prompt de transcripción. El modelo copia el enunciado y los pasos del estudiante tal como están escritos, sin corregirlos. Cada paso con confianza ≥ 0.7 se verifica con SymPy contra el enunciado y la respuesta trae `checks` (`ok`, `wrong` o `unknown`, con motivo y contraejemplo). La PWA marca en la foto dónde no cuadra, sin mostrar el paso correcto. Si Gemini responde 429 o 5xx, se reintenta una vez. El proveedor sale de `LLM_BASE_URL`: con Vercel AI Gateway la autorización es el token OIDC o `AI_GATEWAY_API_KEY`; con otro endpoint compatible con OpenAI, como el de Google, se usa `LLM_API_KEY`. SymPy sigue siendo quien acepta o rechaza un paso.
 
 El servicio de Python ya no tiene OCR propio; RapidLatexOCR y su endpoint `/ocr` se quitaron.
 

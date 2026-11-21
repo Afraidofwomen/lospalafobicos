@@ -57,23 +57,29 @@ export function createLlmClient(config: AppConfig): LlmClient {
             { type: "image_url", image_url: { url: `data:image/jpeg;base64,${message.imageBase64}` } },
           ]
         : message.user;
-      const response = await fetch(`${config.llmBaseUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${token}`,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          model: message.model,
-          temperature: 0.2,
-          response_format: { type: "json_object" },
-          messages: [
-            { role: "system", content: message.system },
-            { role: "user", content },
-          ],
-        }),
-        signal: AbortSignal.timeout(30_000),
-      });
+      const request = () =>
+        fetch(`${config.llmBaseUrl}/chat/completions`, {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            model: message.model,
+            temperature: 0.2,
+            response_format: { type: "json_object" },
+            messages: [
+              { role: "system", content: message.system },
+              { role: "user", content },
+            ],
+          }),
+          signal: AbortSignal.timeout(30_000),
+        });
+      let response = await request();
+      if (response.status === 429 || response.status >= 500) {
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        response = await request();
+      }
       if (response.status === 401 || response.status === 403) {
         throw new LlmNotConfiguredError("rejected");
       }

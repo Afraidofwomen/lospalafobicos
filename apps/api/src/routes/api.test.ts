@@ -134,8 +134,8 @@ test("confianza baja pide confirmación y no llama al verificador", async () => 
   assert.equal(calls.length, 0);
 });
 
-test("analyze manda el fotograma al modelo de visión", async () => {
-  const { math } = clients();
+test("analyze manda el fotograma al modelo de visión y revisa los pasos", async () => {
+  const { math, calls } = clients();
   let sawImage = "";
   let sawModel = "";
   const llm: LlmClient = {
@@ -159,11 +159,37 @@ test("analyze manda el fotograma al modelo de visión", async () => {
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.problem.type, "derivative");
-  assert.equal(body.steps.length, 0);
+  assert.equal(body.steps.length, 1);
+  assert.equal(body.steps[0].latex, "2x");
+  assert.equal(body.checks[0].stepId, "s1");
+  assert.equal(body.checks[0].verdict, "wrong");
+  assert.match(body.checks[0].reason, /regla de la cadena/);
+  assert.equal(calls.length, 2);
   assert.match(body.notes, /Confírmala/);
   assert.equal(sawImage.length > 20, true);
   assert.equal(sawModel, "test");
-  assert.equal(JSON.stringify(body).includes("2x"), false);
+  assert.equal(JSON.stringify(body).includes(String.raw`\cos(x^{2})`), false);
+});
+
+test("analyze no corrige un paso que leyó con poca confianza", async () => {
+  const { math, calls } = clients();
+  const llm: LlmClient = {
+    enabled: () => true,
+    completeJson: async () => ({
+      problem: { latex: String.raw`\frac{d}{dx}x^{2}`, type: "derivative" },
+      steps: [{ latex: "2x?", bbox: [0, 0.5, 1, 0.2], confidence: 0.3 }],
+      legibility: "good",
+    }),
+  };
+  const app = createApp({ config, math, llm });
+  const response = await app.request("/api/analyze", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ sessionId: "cam-low", imageBase64: jpeg() }),
+  });
+  const body = await response.json();
+  assert.equal(body.checks[0].verdict, "unknown");
+  assert.equal(calls.length, 0);
 });
 
 test("analyze avisa cuando la fórmula no se lee", async () => {

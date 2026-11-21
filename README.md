@@ -58,7 +58,7 @@ apps/web/src/
 
 ## Contratos
 
-`POST /api/analyze` recibe `{ "sessionId", "imageBase64" }`. JPEG o PNG, lado mayor de 1280 px como máximo, con una sola fórmula en el recorte. El modelo de visión la pasa a LaTeX en memoria y no guarda la foto. La respuesta trae el problema, `steps` vacío y una nota para confirmar la lectura. Si no hay una fórmula clara, responde 422. Si el modelo no está configurado, responde 503.
+`POST /api/analyze` recibe `{ "sessionId", "imageBase64" }`. JPEG o PNG, lado mayor de 1280 px como máximo, con una sola fórmula en el recorte. El modelo de visión pasa a LaTeX el enunciado y los pasos escritos, en memoria, y no guarda la foto. La respuesta trae el problema, los pasos con su caja en la foto, `checks` con el veredicto de SymPy por paso (`ok`, `wrong`, `unknown`, motivo y contraejemplo) y una nota para confirmar la lectura. Si no hay una fórmula clara, responde 422. Si el modelo no está configurado, responde 503.
 
 `POST /api/verify` recibe `{ "problem", "step", "relation", "type?" }`. `relation` es `equivalent` o `next_valid`. La respuesta es `{ "valid", "reason", "counterexample", "misconception" }`. No incluye la solución simbólica.
 

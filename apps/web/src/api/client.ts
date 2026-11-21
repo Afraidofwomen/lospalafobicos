@@ -41,6 +41,9 @@ function mockAnalyze(): AnalyzeResult {
     ],
     legibility: 'good',
     notes: 'Modo demo: sin backend. Confirma o edita la lectura.',
+    checks: [
+      { stepId: 's1', verdict: 'ok', reason: 'Este paso cuadra.', counterexample: null, misconception: null },
+    ],
   }
 }
 
@@ -109,6 +112,7 @@ export async function askTutor(payload: {
   hintLevel: number
   studentMessage: string
   analysis: AnalyzeResult | null
+  proposedStep?: string
 }): Promise<TutorResponse> {
   if (DEMO) {
     await delay(500)
@@ -123,6 +127,7 @@ export async function askTutor(payload: {
     steps: analysis.steps,
     legibility: analysis.legibility,
     studentMessage: payload.studentMessage,
+    ...(payload.proposedStep ? { proposedStep: payload.proposedStep } : {}),
   })
 }
 

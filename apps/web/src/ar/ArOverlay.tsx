@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import type { AnalyzeResult, OverlayAnnotation } from '../types'
+import type { AnalyzeResult, OverlayAnnotation, StepCheck } from '../types'
 
 const COLORS: Record<string, string> = {
   amber: 'rgba(232, 168, 56, 0.45)',
@@ -17,18 +17,44 @@ const STROKE: Record<string, string> = {
   ink: '#1a2332',
 }
 
+const VERDICT: Record<StepCheck['verdict'], { color: string; label: string; width: number }> = {
+  ok: { color: 'green', label: '✓ Cuadra', width: 2 },
+  wrong: { color: 'rose', label: '✗ Aquí no cuadra', width: 3 },
+  unknown: { color: 'amber', label: '¿Leí bien?', width: 2 },
+}
+
 interface Props {
   analysis: AnalyzeResult | null
   overlays: OverlayAnnotation[]
   width: number
   height: number
+  /** Tamaño original del fotograma; la foto se muestra con object-fit: cover. */
+  frame?: { w: number; h: number } | null
+}
+
+type Bbox = [number, number, number, number]
+
+/** Pasa una caja normalizada del fotograma a píxeles del canvas, con el mismo recorte que cover. */
+function coverMapper(width: number, height: number, frame?: { w: number; h: number } | null) {
+  if (!frame || frame.w === 0 || frame.h === 0) {
+    return ([nx, ny, nw, nh]: Bbox): Bbox => [nx * width, ny * height, nw * width, nh * height]
+  }
+  const scale = Math.max(width / frame.w, height / frame.h)
+  const dx = (width - frame.w * scale) / 2
+  const dy = (height - frame.h * scale) / 2
+  return ([nx, ny, nw, nh]: Bbox): Bbox => [
+    dx + nx * frame.w * scale,
+    dy + ny * frame.h * scale,
+    nw * frame.w * scale,
+    nh * frame.h * scale,
+  ]
 }
 
 /**
  * Overlay AR en modo foto (homografía OpenCV.js llega en Fase 4).
  * Coordenadas normalizadas de la hoja → canvas.
  */
-export function ArOverlay({ analysis, overlays, width, height }: Props) {
+export function ArOverlay({ analysis, overlays, width, height, frame }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -40,11 +66,20 @@ export function ArOverlay({ analysis, overlays, width, height }: Props) {
     if (!ctx) return
 
     ctx.clearRect(0, 0, width, height)
+    const toPx = coverMapper(width, height, frame)
 
     if (analysis) {
-      drawBBox(ctx, analysis.problem.bbox, width, height, 'rgba(45,168,152,0.2)', '#2da898')
+      drawBBox(ctx, toPx(analysis.problem.bbox), 'rgba(45,168,152,0.2)', '#2da898')
       for (const step of analysis.steps) {
-        drawBBox(ctx, step.bbox, width, height, 'rgba(26,35,50,0.08)', 'rgba(26,35,50,0.35)')
+        const check = analysis.checks?.find((c) => c.stepId === step.id)
+        const mark = check ? VERDICT[check.verdict] : null
+        const rect = toPx(step.bbox)
+        if (!mark) {
+          drawBBox(ctx, rect, 'rgba(26,35,50,0.08)', 'rgba(26,35,50,0.35)')
+          continue
+        }
+        drawBBox(ctx, rect, COLORS[mark.color], STROKE[mark.color], mark.width)
+        drawLabel(ctx, mark.label, rect[0], rect[1], STROKE[mark.color])
       }
     }
 
@@ -52,11 +87,7 @@ export function ArOverlay({ analysis, overlays, width, height }: Props) {
       const step = analysis?.steps.find((s) => s.id === ann.targetStepId)
       const bbox = step?.bbox ?? analysis?.problem.bbox
       if (!bbox) continue
-      const [nx, ny, nw, nh] = bbox
-      const x = nx * width
-      const y = ny * height
-      const w = nw * width
-      const h = nh * height
+      const [x, y, w, h] = toPx(bbox)
       const fill = COLORS[ann.color] ?? COLORS.amber
       const stroke = STROKE[ann.color] ?? STROKE.amber
 
@@ -91,23 +122,9 @@ export function ArOverlay({ analysis, overlays, width, height }: Props) {
         ctx.fill()
       }
 
-      if (ann.text) {
-        ctx.font = '600 13px Figtree, system-ui, sans-serif'
-        const pad = 8
-        const tw = ctx.measureText(ann.text).width
-        const bx = x
-        const by = Math.max(8, y - 28)
-        ctx.fillStyle = 'rgba(255,252,247,0.94)'
-        roundRect(ctx, bx, by, tw + pad * 2, 24, 6)
-        ctx.fill()
-        ctx.strokeStyle = stroke
-        ctx.lineWidth = 1
-        ctx.stroke()
-        ctx.fillStyle = '#1a2332'
-        ctx.fillText(ann.text, bx + pad, by + 16)
-      }
+      if (ann.text) drawLabel(ctx, ann.text, x, y, stroke)
     }
-  }, [analysis, overlays, width, height])
+  }, [analysis, overlays, width, height, frame])
 
   return (
     <canvas
@@ -118,24 +135,34 @@ export function ArOverlay({ analysis, overlays, width, height }: Props) {
   )
 }
 
+function drawLabel(ctx: CanvasRenderingContext2D, text: string, x: number, y: number, stroke: string) {
+  ctx.font = '600 13px Figtree, system-ui, sans-serif'
+  const pad = 8
+  const tw = ctx.measureText(text).width
+  const bx = Math.min(Math.max(8, x), ctx.canvas.width - tw - pad * 2 - 8)
+  const by = Math.max(8, y - 28)
+  ctx.fillStyle = 'rgba(255,252,247,0.94)'
+  roundRect(ctx, bx, by, tw + pad * 2, 24, 6)
+  ctx.fill()
+  ctx.strokeStyle = stroke
+  ctx.lineWidth = 1
+  ctx.stroke()
+  ctx.fillStyle = '#1a2332'
+  ctx.fillText(text, bx + pad, by + 16)
+}
+
 function drawBBox(
   ctx: CanvasRenderingContext2D,
-  bbox: [number, number, number, number],
-  width: number,
-  height: number,
+  [x, y, w, h]: Bbox,
   fill: string,
   stroke: string,
+  lineWidth = 1.5,
 ) {
-  const [nx, ny, nw, nh] = bbox
-  const x = nx * width
-  const y = ny * height
-  const w = nw * width
-  const h = nh * height
   ctx.fillStyle = fill
   roundRect(ctx, x, y, w, h, 6)
   ctx.fill()
   ctx.strokeStyle = stroke
-  ctx.lineWidth = 1.5
+  ctx.lineWidth = lineWidth
   ctx.stroke()
 }
 

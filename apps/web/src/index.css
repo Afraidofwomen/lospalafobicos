@@ -513,6 +513,66 @@ body {
   width: 100%;
 }
 
+.confirm-sheet + .camera-stage__caption {
+  margin-top: 0;
+}
+
+.confirm-sheet .confirm-sheet__toggle {
+  margin-bottom: 0.6rem;
+}
+
+.step-checks {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0 0 0.9rem;
+  padding: 0;
+  list-style: none;
+}
+
+.step-check {
+  display: grid;
+  grid-template-columns: 1.6rem 1fr;
+  gap: 0.55rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+
+.step-check--ok { border-color: rgba(76, 190, 110, 0.55); }
+.step-check--wrong { border-color: rgba(224, 90, 110, 0.8); background: rgba(224, 90, 110, 0.12); }
+.step-check--unknown { border-color: rgba(232, 168, 56, 0.6); }
+
+.step-check__icon {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  font-weight: 700;
+  color: #0a0c10;
+}
+
+.step-check--ok .step-check__icon { background: #4cbe6e; }
+.step-check--wrong .step-check__icon { background: #e05a6e; }
+.step-check--unknown .step-check__icon { background: #e8a838; }
+
+.step-check__body {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.step-check__n {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-dim);
+}
+
+.step-check__reason {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
 /* —— History sheet —— */
 .history-sheet {
   position: absolute;

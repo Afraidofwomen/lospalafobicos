@@ -36,11 +36,20 @@ export interface Step {
   confidence: number
 }
 
+export interface StepCheck {
+  stepId: string
+  verdict: 'ok' | 'wrong' | 'unknown'
+  reason: string
+  counterexample: string | null
+  misconception: string | null
+}
+
 export interface AnalyzeResult {
   problem: Problem
   steps: Step[]
   legibility: Legibility
   notes?: string
+  checks?: StepCheck[]
 }
 
 export interface VerifyResult {
