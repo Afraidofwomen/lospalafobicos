@@ -1,0 +1,23 @@
+{
+  "name": "lospalafobicos",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/api"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,math -c blue,magenta \"npm run dev -w @tutor/api\" \"npm run dev:math\"",
+    "dev:api": "npm run dev -w @tutor/api",
+    "dev:math": "services/math/.venv/bin/python -m uvicorn main:app --app-dir services/math --host 127.0.0.1 --port 8000 --reload",
+    "test": "npm run test -w @tutor/api && npm run test:math",
+    "test:math": "PYTHONPATH=services/math services/math/.venv/bin/python -m pytest services/math/tests -q",
+    "typecheck": "npm run typecheck -w @tutor/api",
+    "lint": "npm run lint -w @tutor/api",
+    "eval": "tsx eval/run_eval.ts",
+    "setup:math": "bash scripts/setup-math.sh"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "tsx": "^4.20.6"
+  }
+}
