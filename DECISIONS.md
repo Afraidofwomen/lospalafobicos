@@ -40,7 +40,7 @@ La redacción opcional del tutor usa el mismo endpoint (`LLM_BASE_URL`, `LLM_MOD
 
 ## Despliegue
 
-La API de Hono y el motor de Python salen juntos con Vercel Services (beta). El motor no tiene ruta pública: la API lo llama por `MATH_SERVICE_URL`, que Vercel rellena en cada despliegue. Así el paso siguiente sigue sin salir al cliente. Python va en 3.12. En Vercel la verificación corre en el mismo proceso. La PWA todavía no está en `vercel.json`.
+La API de Hono y el motor de Python salen juntos con Vercel Services (beta). El motor no tiene ruta pública: la API lo llama por `MATH_SERVICE_URL`, que Vercel rellena en cada despliegue. Así el paso siguiente sigue sin salir al cliente. Python va en 3.12. En Vercel la verificación corre en el mismo proceso. La PWA es el servicio `web`: `/api/*` va a la API y el resto a la PWA, con `index.html` como respaldo para rutas profundas. La página de prueba de la API ya no queda en `/`.
 
 ## Entorno de Python
 
