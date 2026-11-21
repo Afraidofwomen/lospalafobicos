@@ -1,6 +1,6 @@
 ﻿import { useEffect, useRef, useState } from 'react'
 import { ArOverlay } from '../ar/ArOverlay'
-import { useCamera } from '../camera/useCamera'
+import { fileToFrame, useCamera } from '../camera/useCamera'
 import { analyzeFrame, askTutor } from '../api/client'
 import { useSessionStore } from '../state/sessionStore'
 import { ConfirmReading } from '../tutor/ConfirmReading'
@@ -10,6 +10,7 @@ import { MathText } from '../tutor/MathText'
 export function CameraStage() {
   const { videoRef, ready, start, captureFrame } = useCamera()
   const stageRef = useRef<HTMLDivElement>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
   const [size, setSize] = useState({ w: 0, h: 0 })
   const [frameSize, setFrameSize] = useState<{ w: number; h: number } | null>(null)
   const [draft, setDraft] = useState('')
@@ -64,6 +65,19 @@ export function CameraStage() {
       setError('No se pudo capturar el fotograma. Espera a que la cámara esté lista.')
       return
     }
+    await reviewFrame(frame)
+  }
+
+  async function handleFile(file: File | undefined) {
+    if (!file) return
+    try {
+      await reviewFrame(await fileToFrame(file))
+    } catch {
+      setError('No pude abrir esa imagen. Prueba con una foto JPEG o PNG.')
+    }
+  }
+
+  async function reviewFrame(frame: string) {
     setFrozenFrame(frame)
     setCameraMode('photo')
     setAnalyzing(true)
@@ -75,7 +89,7 @@ export function CameraStage() {
       setPhase('confirm')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Falló el análisis')
-      setCameraMode('live')
+      setCameraMode(ready ? 'live' : 'denied')
       setFrozenFrame(null)
     } finally {
       setAnalyzing(false)
@@ -109,6 +123,7 @@ export function CameraStage() {
     setCameraMode('live')
     setPhase('camera')
     setAnalysis(null)
+    if (!ready) void start()
   }
 
   return (
@@ -200,11 +215,27 @@ export function CameraStage() {
           </p>
         )}
 
-        {cameraMode === 'denied' && (
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="sr-only"
+          tabIndex={-1}
+          onChange={(e) => {
+            void handleFile(e.target.files?.[0])
+            e.target.value = ''
+          }}
+        />
+
+        {cameraMode === 'denied' && !frozenFrame && (
           <div className="camera-stage__denied">
-            <p>Sin permiso de cámara.</p>
-            <button type="button" className="btn btn--light" onClick={() => void start()}>
-              Reintentar
+            <p>Sin acceso a la cámara en vivo.</p>
+            <button type="button" className="btn btn--light" onClick={() => fileRef.current?.click()}>
+              Tomar o subir foto
+            </button>
+            <button type="button" className="btn btn--ghost" onClick={() => void start()}>
+              Reintentar cámara
             </button>
           </div>
         )}
@@ -278,6 +309,26 @@ export function CameraStage() {
                 disabled={!ready || isAnalyzing || (cameraMode === 'photo' && phase !== 'session')}
               >
                 {isAnalyzing ? 'Leyendo…' : 'Revisar'}
+              </button>
+              <button
+                type="button"
+                className="btn btn--ghost"
+                onClick={() => fileRef.current?.click()}
+                disabled={isAnalyzing}
+              >
+                Subir foto
+              </button>
+            </div>
+          )}
+          {cameraMode === 'denied' && phase === 'session' && (
+            <div className="camera-stage__actions">
+              <button
+                type="button"
+                className="btn btn--review"
+                onClick={() => fileRef.current?.click()}
+                disabled={isAnalyzing}
+              >
+                {isAnalyzing ? 'Leyendo…' : 'Tomar o subir foto'}
               </button>
             </div>
           )}

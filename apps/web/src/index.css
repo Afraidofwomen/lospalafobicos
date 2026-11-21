@@ -376,6 +376,13 @@ body {
   background: rgba(20, 24, 32, 0.92);
   border: 1px solid var(--line);
   text-align: center;
+  display: grid;
+  gap: 0.6rem;
+  justify-items: center;
+}
+
+.camera-stage__denied p {
+  margin: 0;
 }
 
 .camera-stage__caption {
@@ -445,6 +452,7 @@ body {
 .camera-stage__actions {
   display: flex;
   justify-content: flex-start;
+  gap: 0.6rem;
 }
 
 /* —— Confirm —— */

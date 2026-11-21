@@ -10,9 +10,35 @@ const CONSTRAINTS: MediaStreamConstraints = {
   },
 }
 
+const UPLOAD_HINT = 'Puedes usar «Tomar o subir foto».'
+
+function cameraErrorMessage(e: unknown): string {
+  if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+    return `El navegador solo deja usar la cámara en HTTPS o en localhost. ${UPLOAD_HINT}`
+  }
+  const name = e instanceof DOMException ? e.name : ''
+  if (name === 'NotAllowedError') return `El navegador bloqueó la cámara; dale permiso en la barra de direcciones. ${UPLOAD_HINT}`
+  if (name === 'NotFoundError' || name === 'OverconstrainedError') return `No encontré una cámara. ${UPLOAD_HINT}`
+  if (name === 'NotReadableError') return `Otra aplicación está usando la cámara. ${UPLOAD_HINT}`
+  return `No hay acceso a la cámara. ${UPLOAD_HINT}`
+}
+
+/** Pasa una foto elegida por el usuario a JPEG ≤ 1280 px de lado mayor. */
+export async function fileToFrame(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file)
+  const scale = Math.min(1, 1280 / Math.max(bitmap.width, bitmap.height))
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.round(bitmap.width * scale)
+  canvas.height = Math.round(bitmap.height * scale)
+  canvas.getContext('2d')?.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+  bitmap.close()
+  return canvas.toDataURL('image/jpeg', 0.85)
+}
+
 export function useCamera() {
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
+  const attemptRef = useRef(0)
   const [ready, setReady] = useState(false)
   const setCameraMode = useSessionStore((s) => s.setCameraMode)
   const setError = useSessionStore((s) => s.setError)
@@ -25,23 +51,35 @@ export function useCamera() {
   }, [])
 
   const start = useCallback(async () => {
+    const attempt = ++attemptRef.current
     setError(null)
+    stop()
+    let stream: MediaStream | null = null
     try {
-      stop()
-      const stream = await navigator.mediaDevices.getUserMedia(CONSTRAINTS)
+      stream = await navigator.mediaDevices.getUserMedia(CONSTRAINTS)
+      if (attempt !== attemptRef.current) {
+        stream.getTracks().forEach((t) => t.stop())
+        return
+      }
       streamRef.current = stream
       const video = videoRef.current
       if (video) {
         video.srcObject = stream
         await video.play()
       }
+      if (attempt !== attemptRef.current) return
       setReady(true)
       setCameraMode('live')
-    } catch {
+    } catch (e) {
+      if (attempt !== attemptRef.current) return
+      if (e instanceof DOMException && e.name === 'AbortError' && stream?.active) {
+        setReady(true)
+        setCameraMode('live')
+        return
+      }
+      stream?.getTracks().forEach((t) => t.stop())
       setCameraMode('denied')
-      setError(
-        'No hay acceso a la cámara. Revisa permisos del navegador o usa HTTPS.',
-      )
+      setError(cameraErrorMessage(e))
     }
   }, [setCameraMode, setError, stop])
 
@@ -64,7 +102,13 @@ export function useCamera() {
     return canvas.toDataURL('image/jpeg', 0.85)
   }, [])
 
-  useEffect(() => () => stop(), [stop])
+  useEffect(
+    () => () => {
+      attemptRef.current++
+      stop()
+    },
+    [stop],
+  )
 
   return { videoRef, ready, start, stop, captureFrame }
 }
