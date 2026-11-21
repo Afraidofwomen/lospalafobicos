@@ -8,38 +8,51 @@ web
 
 ## Stack
 
-delegated: una página estática, sin framework, servida por la API de Hono que ya está en Vercel. El pedido era ver el backend, no abrir otra aplicación.
+delegated: React + Vite + TypeScript PWA in `apps/web` (already scaffolded; camera via getUserMedia; KaTeX for formulas).
 
 ## Users
 
-Quien construye el tutor, en el escritorio, comprobando que la foto, SymPy y las preguntas se comportan como el plano dice. Inferido del pedido «solo para ver cómo funciona».
+Estudiantes universitarios de cálculo (una variable) que tienen un ejercicio en papel, pizarrón o pantalla y quieren avanzar sin que les den la respuesta.
 
 ## Product Purpose
 
-El producto de verdad es un tutor socrático de cálculo en realidad aumentada. Esta superficie no es esa app: deja ver el contrato actual, una fórmula a la vez.
+Tutor socrático en realidad aumentada: la cámara lee el ejercicio, el tutor guía con una pregunta a la vez, y un motor simbólico verifica los pasos. Éxito = el estudiante llega solo a la solución, sin filtración de la respuesta final antes del nivel de pista 5.
 
 ## Positioning
 
-SymPy decide si el paso vale. La página solo enseña la pregunta, el nivel de pista y el veredicto. No calcula y no adelanta la respuesta.
+No es un solucionador de tareas. Es un tutor que enseña por preguntas, anclado al papel del estudiante vía cámara/AR, con verificación matemática determinista (no solo LLM).
 
 ## Operating Context
 
-Se abre en el navegador contra la API desplegada. La foto es un recorte de una fórmula. También se puede escribir LaTeX a mano para no depender de la cámara.
+Uso en el teléfono (PWA), a menudo en escritorio de estudio o aula; luz variable; manos ocupadas con lápiz; sesión corta centrada en un ejercicio. Idioma español. Notación LaTeX interna.
 
 ## Capabilities and Constraints
 
-La API pública es `/api/analyze`, `/api/verify` y `/api/tutor`. El motor de Python no se expone. Las sesiones viven en memoria del servidor. La primera lectura OCR de una instancia fría descarga los pesos y puede tardar. Inferido: esta página se puede tirar cuando exista el frontend de la cámara.
+- MVP: límites, continuidad, derivadas, aplicaciones, integrales.
+- Análisis solo al pulsar "Revisar" (no por frame).
+- Sin revelar la respuesta final salvo escalamiento nivel 5.
+- Imágenes no se guardan en disco por defecto.
+- El backend (`apps/api` + SymPy en `services/math`) decide si un paso vale; el frontend no calcula. Con `VITE_DEMO=true` corre con mocks.
+- Clave del modelo solo en el servidor. Tracking OpenCV.js en fase posterior.
 
 ## Brand Commitments
 
-El tutor habla español, hace una pregunta por turno y no dice «incorrecto». El nombre del proyecto es Palafóbicos.
+- Nombre de producto: **visAR**.
+- Voz: cálida, breve, una pregunta por turno; nunca condescendiente.
+- El usuario rechazó explícitamente un look de pizarrón escolar como dirección visual ("nada que ver").
 
 ## Evidence on Hand
 
-Contratos en `apps/api/src/schemas.ts` y el plano `docs/TUTOR_SOCRATICO_CALCULO_AR.md`. No hay banco de fotos de alumnos.
+- Brief: `docs/TUTOR_SOCRATICO_CALCULO_AR.md`
+- UI actual: `apps/web` (cámara, overlay, chat, onboarding)
+- Contratos de la API: `apps/api/src/schemas.ts`. Página de prueba del backend: `apps/api/public/index.html`.
+- No hay logo oficial, fotos de producto ni testimonios reales. Demos sintéticas deben etiquetarse como demo.
 
 ## Product Principles
 
-- La pregunta va delante del veredicto.
-- El alumno confirma la lectura antes de que el tutor corrija.
-- Lo que la API no devuelve, la página no lo inventa.
+1. El razonamiento del estudiante es el centro; la UI no compite con el papel ni con la pregunta.
+2. Claridad matemática: las fórmulas deben leerse mejor que el chrome.
+3. Privacidad por defecto: avisar qué se envía; no archivar imágenes sin consentimiento.
+4. Guía gradual: el nivel de pista es estado visible y comprensible.
+5. Degradar con gracia: sin cámara → mensaje claro; sin red → estado honesto.
+

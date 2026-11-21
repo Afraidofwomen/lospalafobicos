@@ -1,8 +1,14 @@
 # Decisiones
 
-## Esta rama no incluye la PWA
+## Frontend y backend en el mismo monorepo
 
-El plano pide `apps/web` en la fase 0. Esa app está en `front_end`. Aquí `npm run dev` levanta la API y el motor matemático. Cuando el frontend exista, se conecta a estos contratos y se ajusta `CORS_ORIGIN`.
+La PWA (`apps/web`) llegó en la rama `cursor/tutor-socratico-frontend-f31e` y se fusionó con el backend. `apps/api` y `apps/web` son workspaces de la raíz; `npm run dev` levanta API, motor matemático y Vite. El plano queda solo en `docs/`.
+
+## La PWA llama a la API en el mismo origen
+
+`VITE_API_URL` vacío significa `/api` en el mismo host. En desarrollo Vite pasa `/api` a `127.0.0.1:8787`, así el teléfono solo necesita llegar a Vite. Los mocks del frontend quedan detrás de `VITE_DEMO=true`.
+
+El cliente traduce la sesión de la PWA al contrato de `/api/tutor`: manda `problem`, `steps`, `legibility` y `studentMessage`. El nivel de pista no se manda; lo lleva el servidor por `sessionId`. Los tipos `unknown` y `definite_integral` del frontend se mandan como sin tipo e `integral`.
 
 ## SymPy es la fuente de verdad
 
@@ -24,18 +30,36 @@ No hay disco para fotos ni para sesiones. La imagen se valida en memoria (JPEG o
 
 ## La fórmula la ve un modelo en la nube
 
-`/api/analyze` manda el fotograma a Vercel AI Gateway, modelo `google/gemini-3.5-flash-lite`, con el prompt de transcripción. No resuelve el ejercicio: `steps` se vacía antes de responder. En Vercel la autorización es el token OIDC; `AI_GATEWAY_API_KEY` o `LLM_API_KEY` sirven fuera. La cámara de la página de prueba envía un fotograma cada dos segundos y solo abre la conversación cuando la misma fórmula se repite. SymPy sigue siendo quien acepta o rechaza un paso.
+`/api/analyze` manda el fotograma a un modelo de visión (`gemini-3.5-flash-lite`) con el prompt de transcripción. No resuelve el ejercicio: `steps` se vacía antes de responder. El proveedor sale de `LLM_BASE_URL`: con Vercel AI Gateway la autorización es el token OIDC o `AI_GATEWAY_API_KEY`; con otro endpoint compatible con OpenAI, como el de Google, se usa `LLM_API_KEY`. SymPy sigue siendo quien acepta o rechaza un paso.
 
 RapidLatexOCR queda en el servicio de Python y ya no está en el camino de `/api/analyze`.
 
 ## Proveedor del modelo de redacción
 
-La redacción opcional del tutor usa el mismo gateway (`LLM_BASE_URL`, `LLM_MODEL`). La clave no se escribe en el cliente. Sin modelo, la pregunta sale de las plantillas.
+La redacción opcional del tutor usa el mismo endpoint (`LLM_BASE_URL`, `LLM_MODEL`). La clave no se escribe en el cliente. Sin modelo, la pregunta sale de las plantillas.
 
 ## Despliegue
 
-La API de Hono y el motor de Python salen juntos con Vercel Services (beta). El motor no tiene ruta pública: la API lo llama por `MATH_SERVICE_URL`, que Vercel rellena en cada despliegue. Así el paso siguiente sigue sin salir al cliente. Python va en 3.12. En Vercel la verificación corre en el mismo proceso.
+La API de Hono y el motor de Python salen juntos con Vercel Services (beta). El motor no tiene ruta pública: la API lo llama por `MATH_SERVICE_URL`, que Vercel rellena en cada despliegue. Así el paso siguiente sigue sin salir al cliente. Python va en 3.12. En Vercel la verificación corre en el mismo proceso. La PWA todavía no está en `vercel.json`.
 
 ## Entorno de Python
 
 En esta máquina `python3 -m venv` no trae pip. `scripts/setup-math.sh` crea el entorno con `--without-pip` y luego instala pip. SymPy 1.14 necesita `antlr4-python3-runtime==4.11.1` para leer LaTeX.
+
+## 2026-11-21 — Frontend Fase 0 (PWA)
+
+1. **Monorepo en la raíz del repo** (`apps/web`), no carpeta `tutor-ar/` aparte: el remoto ya es `lospalafobicos`.
+2. **AR en modo foto**: overlay Canvas 2D sobre fotograma congelado. OpenCV.js / homografía queda para Fase 4.
+3. **Estado con Zustand**: sesión, nivel de pista, mensajes y overlays en un store único.
+4. **Análisis solo al pulsar “Revisar”**, como pide §8 del brief.
+
+## 2026-11-21 — Mundo visual (Impeccable)
+
+1. Dirección elegida: **challenger vertical full-bleed** (`pop-culture-shelf-vertical-video-feed-surface`) para la app de cámara.
+2. Operate: el mundo presta solo type / palette / density / signature move — no costume de red social.
+3. Firma: pregunta del tutor como caption inferior sobre la cámara; rail derecho con pista y controles estándar.
+4. Tipografía app: Public Sans (self-hosted). Paleta void + blanco + ámbar de estado.
+
+## 2026-11-21 — Landing estilo MathWiz
+
+Landing adaptada de la referencia MathWiz: card oscura, acentos púrpura/verde, busto VR de la misma imagen (`public/hero-bust.jpg` / `landing-ref.jpg`). CTAs abren la cámara del tutor visAR.
