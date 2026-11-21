@@ -119,8 +119,8 @@ export function buildOverlay(
   outcome: Outcome,
   steps: Step[],
 ): OverlayItem[] {
-  const target = steps.at(-1);
-  if (!target) return [];
+  // Sin pasos leídos de la foto, el cliente ancla la marca al enunciado.
+  const target = steps.at(-1) ?? { id: "problem" };
   if (outcome === "unreadable") {
     return [{ targetStepId: target.id, type: "note", text: "¿Es esto lo que escribiste?", color: "amber" }];
   }
