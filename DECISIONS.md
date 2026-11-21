@@ -32,7 +32,7 @@ No hay disco para fotos ni para sesiones. La imagen se valida en memoria (JPEG o
 
 `/api/analyze` manda el fotograma a un modelo de visión (`gemini-3.5-flash-lite`) con el prompt de transcripción. No resuelve el ejercicio: `steps` se vacía antes de responder. El proveedor sale de `LLM_BASE_URL`: con Vercel AI Gateway la autorización es el token OIDC o `AI_GATEWAY_API_KEY`; con otro endpoint compatible con OpenAI, como el de Google, se usa `LLM_API_KEY`. SymPy sigue siendo quien acepta o rechaza un paso.
 
-RapidLatexOCR queda en el servicio de Python y ya no está en el camino de `/api/analyze`.
+El servicio de Python ya no tiene OCR propio; RapidLatexOCR y su endpoint `/ocr` se quitaron.
 
 ## Proveedor del modelo de redacción
 

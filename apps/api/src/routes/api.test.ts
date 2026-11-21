@@ -53,9 +53,6 @@ function clients(mathBody: MathResult = mathResult()) {
       calls.push(input);
       return mathBody;
     },
-    readFormula: async () => {
-      throw new Error("esta prueba no lee fórmulas");
-    },
   };
   const llm: LlmClient = {
     enabled: () => false,

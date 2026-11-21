@@ -5,7 +5,7 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { loadConfig, type AppConfig } from "./config.ts";
 import { createLlmClient, LlmNotConfiguredError, VisionUnavailableError, type LlmClient } from "./llm/client.ts";
-import { createMathClient, MathUnavailableError, UnreadableImageError, type MathClient } from "./math/client.ts";
+import { createMathClient, MathUnavailableError, type MathClient } from "./math/client.ts";
 import { rateLimit } from "./rateLimit.ts";
 import { analyze } from "./routes/analyze.ts";
 import { tutor } from "./routes/tutor.ts";
@@ -43,9 +43,6 @@ export function createApp(deps: AppDeps) {
   app.onError((err, c) => {
     if (err instanceof ZodError) {
       return c.json(errorBody("validation_error", "La petición no cumple el esquema."), 400);
-    }
-    if (err instanceof UnreadableImageError) {
-      return c.json(errorBody("unreadable", err.message), 422);
     }
     if (err instanceof MathUnavailableError) {
       return c.json(errorBody("math_unavailable", "El verificador no está disponible."), 503);

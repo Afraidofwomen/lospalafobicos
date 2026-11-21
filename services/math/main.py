@@ -1,4 +1,4 @@
-"""Microservicio de verificación y lectura de fórmulas.
+"""Microservicio de verificación de pasos.
 
 En local escucha en 127.0.0.1. En Vercel no tiene ruta pública: solo lo llama
 la API por el binding interno.
@@ -6,8 +6,6 @@ la API por el binding interno.
 
 from __future__ import annotations
 
-import base64
-import binascii
 import multiprocessing as mp
 import os
 from concurrent.futures import ProcessPoolExecutor, TimeoutError as FuturesTimeout
@@ -18,7 +16,6 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from ocr import EmptyReading, OcrUnavailable, read_image
 from verify import ParseError, verify_payload
 
 _executor: ProcessPoolExecutor | None = None
@@ -84,41 +81,9 @@ class VerifyOut(BaseModel):
     status: Literal["ok", "unverifiable"] = "ok"
 
 
-class OcrIn(BaseModel):
-    imageBase64: str = Field(min_length=20, max_length=2_000_000)
-
-
 @app.get("/health")
 def health() -> dict[str, bool]:
     return {"ok": True}
-
-
-@app.post("/ocr")
-def ocr(body: OcrIn) -> dict:
-    try:
-        image = base64.b64decode(body.imageBase64, validate=True)
-    except (binascii.Error, ValueError):
-        return JSONResponse(
-            status_code=422,
-            content={"error": {"code": "invalid_image", "message": "La imagen no es base64 válido."}},
-        )
-    try:
-        return read_image(image)
-    except EmptyReading:
-        return JSONResponse(
-            status_code=422,
-            content={
-                "error": {
-                    "code": "unreadable",
-                    "message": "No pude leer una fórmula. Acerca la foto a una sola expresión.",
-                }
-            },
-        )
-    except OcrUnavailable as exc:
-        return JSONResponse(
-            status_code=503,
-            content={"error": {"code": "ocr_unavailable", "message": str(exc)}},
-        )
 
 
 @app.post("/verify", response_model=VerifyOut)
